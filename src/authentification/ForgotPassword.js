@@ -1,22 +1,23 @@
 import React from 'react';
 import { TextInput, Button, StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { createStackNavigator, createAppContainer, NavigationActions } from 'react-navigation';
-//import Icon from 'react-native-vector-icons/FontAwesome'
+import { Icon } from 'react-native-elements'
 import SignUp from './SignUp'
 import AuthFailedPop from './AuthFailedPop'
 import { connect } from 'react-redux'
 import firebase from 'firebase';
-import { Icon } from 'react-native-elements'
 
-import ForgotPassword from './ForgotPassword'
+import SignIn from './SignIn'
+import ForgotPasswordFailedPopUp from './ForgotPasswordFailedPopUp'
+import ForgotPasswordSuccessPopUp from './ForgotPasswordSuccessPopUp'
 
 const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  databaseURL: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: ""
+  apiKey: "AIzaSyB_C1VV2WkSmp-jZveUKt_7sI6eMWAr9iY",
+  authDomain: "rich-and-poor-d9156.firebaseapp.com",
+  databaseURL: "https://rich-and-poor-d9156.firebaseio.com",
+  projectId: "rich-and-poor-d9156",
+  storageBucket: "rich-and-poor-d9156.appspot.com",
+  messagingSenderId: "1074587204547"
 };
 
 getState = data => {
@@ -25,15 +26,12 @@ getState = data => {
   }
 }
 
-class SignIn extends React.Component {
+class ForgotPassword extends React.Component {
 
   state = {
-    firstname: '',
-    lastname: '',
-    password: '',
     email: '',
-    user: '',
-    authFailed: false
+    successPopUp: false,
+    errorPopUp: false
   }
   
   constructor(props) {
@@ -48,39 +46,36 @@ class SignIn extends React.Component {
     }
   }
 
-  signIn(email, password) {
-      email = email.replace(/\s+$/, '');
-      console.log(email)
-      firebase.auth().signInWithEmailAndPassword(email, password)
-      .then(() => this.getUser(email))
-      .then(() => {
-        const { dispatch } = this.props
-          console.log('sign in success')
-          this.props.navigation.navigate('Main')
-        }
-      )
-      .catch((error) => {
-        console.log(error)
-        this.setState({
-          authFailed: true
-        })
-      })
-  }
-
   forgotPassword(email) {
     firebase.auth().sendPasswordResetEmail(email)
-    .then(() => console.log('Email sended'))
+    .then(() => {
+        console.log('Email sended')
+        this.setState({
+            successPopUp: true
+        })
+    })
     .catch((error) => {
         console.log(error)
+        this.setState({
+            errorPopUp: true
+        })
     })
   }
 
-  showDialog() {
-    this.setState({authFailed: true});
+  showErrorDialog() {
+    this.setState({errorPopUp: true});
   }
 
-  closeDialog() {
-      this.setState({authFailed: false});
+  closeErrorDialog() {
+      this.setState({errorPopUp: false});
+  }
+
+  showSuccessDialog() {
+    this.setState({successPopUp: true});
+  }
+
+  closeSuccessDialog() {
+      this.setState({successPopUp: false}, () => this.props.navigation.navigate('SignIn'));
   }
 
   onChangeText(key, value) {
@@ -90,16 +85,6 @@ class SignIn extends React.Component {
     console.log(this.state.email)
   }
 
-  goToSignUp() {
-    this.navigation.navigate('SignUp')
-  }
-
-  updatePassword = (pwd) => {
-    this.setState({
-      password: pwd
-    })
-  }
-
   render() {
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -107,36 +92,32 @@ class SignIn extends React.Component {
 
 
           <View style={styles.connexionContainer}>
-            <Text style={styles.connexion}>Connexion</Text>
-
-            <TouchableOpacity style={styles.buttonInscription} onPress={() => {this.props.navigation.navigate('SignUp')}}>
-            <Text style={styles.inscription}>Inscription</Text>
-            </TouchableOpacity>
-
+          <Text style={styles.title}>Réinitialisation</Text>
+            <Text style={styles.emailTitle}>Veuillez entrer votre email</Text>
           </View>
 
           <KeyboardAvoidingView style={styles.inputContainer} behavior="padding" enabled> 
 
+
             <TextInput style={styles.input} placeholder='Email' onChangeText={(v) => this.onChangeText('email', v)}
-              returnKeyType ='next' onSubmitEditing={() => { this.passwordInput.focus(); }}
+              returnKeyType ='done'
             />
 
-            <TextInput ref={(password) => this.passwordInput = password} returnKeyType ='done' style={styles.input} placeholder='Mot de passe' secureTextEntry={true} onChangeText={(v) => this.updatePassword(v)}/>
-
-            <TouchableOpacity style={styles.passwordButton} onPress={() => this.props.navigation.navigate('ForgotPassword')}>
-              <Text style={styles.passwordText}>Mot de passe oublié ?</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.connexionButton} onPress={() => this.signIn(this.state.email, this.state.password)}>
-              <Icon name="check" size={30} type='font-awesome' color='#50B263'/>
-              <Text style={styles.connexionText}>Connexion</Text>
+            <TouchableOpacity style={styles.connexionButton} onPress={() => this.forgotPassword(this.state.email)}>
+              <Icon name="check" type='font-awesome' size={30} color='#50B263'/>
+              <Text style={styles.connexionText}>Envoyer</Text>
             </TouchableOpacity>
 
           </KeyboardAvoidingView>
 
-        <AuthFailedPop
-          closeDialog={() => this.closeDialog()}
-          isVisible={this.state.authFailed}
+        <ForgotPasswordFailedPopUp
+          closeDialog={() => this.closeErrorDialog()}
+          isVisible={this.state.errorPopUp}
+        />
+
+        <ForgotPasswordSuccessPopUp
+          closeDialog={() => this.closeSuccessDialog()}
+          isVisible={this.state.successPopUp}
         />
 
         </View>
@@ -145,17 +126,24 @@ class SignIn extends React.Component {
   }
 }
 
-export default connect(getState)(SignIn)
+export default connect(getState)(ForgotPassword)
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
   },
-  connexion: {
-    marginLeft: 20,
+  title: {
+    alignItems: 'center',
+    alignSelf: 'center',
     fontSize: 30,
     fontWeight: 'bold'
+  },
+  emailTitle: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#A3B2BB'
   },
   buttonInscription: {
     justifyContent: 'center'
@@ -173,15 +161,7 @@ const styles = StyleSheet.create({
     marginTop: 30
   },
   connexionContainer: {
-    //marginTop: 50,
-    justifyContent: 'space-between',
-    flexDirection: 'row'
-  },
-  inputContainer: {
-
-  },
-  fbContainer: {
-
+    marginVertical: 50,
   },
   input: {
     borderColor: 'white',
